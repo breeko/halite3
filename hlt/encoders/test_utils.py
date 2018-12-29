@@ -1,4 +1,4 @@
-#filename test_utils.py
+#test_utils.py
 
 import unittest
 import numpy as np
@@ -30,13 +30,15 @@ class UtilsTestCase(unittest.TestCase):
 		self.assertEqual(tiled_arr.shape, expected)
 	
 	def test_roll_and_crop_roll(self):
-		bottom_right_point = [x - 1 for x in self.arr.shape]
-		rolled = roll_and_crop(arr=self.arr, point=bottom_right_point, radius=self.radius)
+		y = self.arr.shape[0] - 1
+		x = self.arr.shape[1] - 1
+		rolled = roll_and_crop(arr=self.arr, x=x, y=y, radius=self.radius)
 		self.assertTupleEqual(rolled.shape, self.arr.shape)
 
 	def test_roll_and_crop_full_center(self):
-		center_point = (self.radius, self.radius)
-		rolled = roll_and_crop(arr=self.arr, point=center_point, radius=self.radius)
+		y = self.arr.shape[0] // 2
+		x = self.arr.shape[1] // 2
+		rolled = roll_and_crop(arr=self.arr, x=x, y=y, radius=self.radius)
 		self.assertListEqual(rolled.tolist(), self.arr.tolist())
 	
 	def test_crop(self):

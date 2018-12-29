@@ -1,20 +1,24 @@
 import importlib
-from hlt.game_map import GameMap
 import numpy as np
-
+import json
 
 class Encoder():
-	def name(self, radius: int, owner: int):
+	def name(self):
 		raise NotImplementedError()
 	
-	def encode(self, gamemap: GameMap, point: (int, int), halite_normalize: float) -> np.array:
+	def encode_from_file(self, path: str) -> None:
+		with open(path,"r") as f:
+			raw = f.read()
+			game = json.loads(raw)
+		return self.encode_from_dict(game)
+
+	def encode_from_dict(self, game: dict) -> None:
 		raise NotImplementedError()
 	
-	def shape(self) -> tuple:
+	def encode_from_gamemap(self, game) -> None:
 		raise NotImplementedError()
 
-
-def get_encoder_by_name(name: str, radius: int, owner: int) -> Encoder:
-	module = importlib.import_module(f"hlt.encoders.{name}")
+def get_encoder_by_name(name: str) -> Encoder:
+	module = importlib.import_module("hlt.encoders.{}".format(name))
 	constructors = getattr(module, "create")
-	return constructors(radius=radius, owner=owner)
+	return constructors()
