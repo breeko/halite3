@@ -16,7 +16,6 @@ def roll_and_crop(arr: np.array, x: int, y: int, radius: int) -> np.array:
 			radius (int): 			radius of the array with the point as the center
 		output:
 			out (np.array): 		rolled and shifted array with point as its center
-
 		e.g.
 			input: 
 				arr = 
@@ -49,4 +48,3 @@ def roll_and_crop(arr: np.array, x: int, y: int, radius: int) -> np.array:
 def tile(arr: np.array, reps: int) -> np.array:
 	tile_reps = (reps, reps) + arr.shape[2:]
 	return np.tile(arr, reps=tile_reps)
-

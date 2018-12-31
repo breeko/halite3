@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from hlt.data.utils import one_hot, create_arr
+from hlt.data.utils import one_hot, create_arr, get_move_counts
 from hlt.encoders.base import get_encoder_by_name
 from hlt.encoders.utils import roll_and_crop
 
@@ -15,32 +15,37 @@ class Generator:
 		prob_include_ship:float=0.2,
 		batch_size:int=128,
 		start_frame_perc:float=0.0,
-		end_frame_perc:float=1.0) -> (dict, np.array):
+		end_frame_perc:float=1.0,
+		equal_move_prob:bool=True) -> (dict, np.array):
 		""""
 			Input generator for training a neural network
 			inputs:
+				encoder_name (str):							name of the encoder to use
 				replay_folder (str): 						directory that stores .hlt games
 				player_name (str): 							name of the player you want to create a training set for
 				radius (int): 								how many squares to consider in each direction
 				prob_include_frame (float - default 0.2): 	probability to include a frame when aggregating frames 
 				prob_include_ship (float - default 0.2):  	probability to include a ship when aggregating ships from frames 
-				batch_size (int - default 128): size of   	the training batch
+				batch_size (int - default 128):				size of the training batch
 				start_frame_perc (float - default 0.0):   	the frame percent to start on (e.g. 0.2 means start 20% through the game)	
-				end_frame_perc (float - default 1.0):     	the frame percent to start on (e.g. 0.9 means end after 90%of game is through)
-
+				end_frame_perc (float - default 1.0):     	the frame percent to start on (e.g. 0.9 means end after 90% of game is through)
+				equal_move_prob (boolean):					if True, this provided an equal sampling of all possible moves
+			
 			outputs:
-				[{"cargos": cargos, "moves": moves, "halites": halites, "ships": ships, "dropoffs": dropoffs}, outs]
+				[{"maps", "move_costs", "halites", "ships", "dropoffs", "cargos"}, outs]
 
-				cargo:    (None, 1),                                 percent of max capacity a ship is carrying
-				turn:     (None, 1),                                 percent of max turns
-				halite:   (None, (2 * radius + 1), (2 * radius + 1), 1), halite as percentage of max halite on map
-				ships:    (None, (2 * radius + 1), (2 * radius + 1), 1), ships on map, 1 representing friendly ship and -1 representing enemy ship
-				dropoffs: (None, (2 * radius + 1), (2 * radius + 1), 1), dropoffs on map, 1 representing friendly dropoff and -1 representing enemy dropoff
-				outs:     (None, 1),			   			                     still, north, east, south, west as a one-hot vector
+				maps:	  	(None, (2 * radius + 1), (2 * radius + 1), 4)	concatenation of relative and normalized [halite, ships, structures, move_costs]
+				move_costs: (None, (2 * radius + 1), (2 * radius + 1), 1)	how many time current ship can move on a given square
+				halites:   	(None, (2 * radius + 1), (2 * radius + 1), 1), 	halite ship is carrying
+				ships:    	(None, (2 * radius + 1), (2 * radius + 1), 1), 	ships on map, 1 representing friendly ship and -1 representing enemy ship
+				dropoffs: 	(None, (2 * radius + 1), (2 * radius + 1), 1), 	dropoffs on map, 1 representing friendly dropoff and -1 representing enemy dropoff
+				cargos:   	(None, 1),                                 		cargo ship is carrying
+				outs:     	(None, 5),			   			                one-hot vector of move (north, south, east, west, still)
 				
 		"""
 		# TODO: Make player_name into a lambda to allow for things like winning player
-		# TODO: implement lookback
+		# TODO: Implement lookback
+		# TODO: Random map rotations
 		
 		# user defined specs
 		self.replay_folder = replay_folder
@@ -57,7 +62,12 @@ class Generator:
 
 		self.move_mapping = {"n": 0, "s": 1, "e": 2, "w": 3, "o": 4}
 		self.num_move_types = len(self.move_mapping)
-
+		self.equal_move_prob = equal_move_prob
+	
+	@property
+	def output_shape(self):
+		return (self.radius * 2 + 1, self.radius * 2 + 1, 4)
+		
 	def __next__(self):
 		map_shape = self.radius * 2 + 1, self.radius * 2 + 1
 		num_classes = 5
@@ -87,6 +97,10 @@ class Generator:
 
 			max_halite = np.max(encoded["halites"][0])
 			frame_shape = encoded["halites"][0].shape
+
+			move_counts = get_move_counts(player=player_id, frames_moves=encoded["moves"], relative=True)
+			min_move_prob = min(move_counts.values())
+			move_probs = {k: min_move_prob / float(v) for k, v in move_counts.items()}
 			
 			for num_frame in range(num_frames):
 				perc_frame = num_frame / float(num_frames)
@@ -114,7 +128,10 @@ class Generator:
 				for ship_id, move in player_moves.items():
 					if np.random.random() > self.prob_include_ship:
 						continue
-					
+
+					if self.equal_move_prob and np.random.random() > move_probs[move]:
+						continue
+
 					ship = frame_ships[player_id][ship_id]
 					cargo = ship["energy"]
 
@@ -124,23 +141,26 @@ class Generator:
 					rel_halites 	= roll_and_crop(arr=frame_halites, x=x, y=y, radius=self.radius)
 					rel_ships 		= roll_and_crop(arr=arr_ships, x=x, y=y, radius=self.radius)
 					rel_structures 	= roll_and_crop(arr=arr_structures, x=x, y=y, radius=self.radius)
-					rel_move_costs  = cargo - rel_halites / move_cost_ratio
+					rel_move_costs  = cargo - (rel_halites / move_cost_ratio) # how many times you can move from this space
 
-					rel_halites 	= rel_halites / max_halite # normalize
-					rel_move 		= one_hot(arr=move, num_classes=self.num_move_types, mapping=self.move_mapping)
+					 # normalize
+					norm_rel_halites 	= rel_halites / max_halite
+					norm_rel_move_costs  = rel_move_costs / max_halite
+					
+					rel_move 			= one_hot(arr=move, num_classes=self.num_move_types, mapping=self.move_mapping)
 
 					out_halites[ct]  	= rel_halites
 					out_ships[ct]    	= rel_ships
 					out_dropoffs[ct] 	= rel_structures
 					out_moves[ct]    	= rel_move
 					out_move_costs[ct] 	= rel_move_costs
-					out_maps[ct]	 	= np.stack([rel_halites, rel_ships, rel_structures, rel_move_costs], axis=-1).squeeze()
+					out_maps[ct]	 	= np.stack([norm_rel_halites, rel_ships, rel_structures, norm_rel_move_costs], axis=-1).squeeze()
 					out_cargos[ct]		= cargo
-					
+
 					ct = (ct + 1) % self.batch_size
 					
 					if ct == 0:
-						inputs = {"maps": np.copy(out_maps),
+						inputs = {	"maps": np.copy(out_maps),
 									"move_costs": np.copy(out_move_costs),
 									"cargos": np.copy(out_cargos),
 									"halites": np.copy(out_halites),

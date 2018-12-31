@@ -2,6 +2,19 @@ import numpy as np
 from hlt.positionals import Position
 from hlt.game_map import GameMap
 
+def get_move_counts(player: str, frames_moves: list, relative: True) -> list:
+	""" Takes a list of frame moves by player and ship-id and returns a count of each move type	"""
+	player_moves = {}
+	for frame_moves in frames_moves:
+		frame_player_moves = frame_moves.get(player)
+		if frame_player_moves:
+			for player_move in frame_player_moves.values():
+				player_moves[player_move] = player_moves.get(player_move, 0) + 1
+	if relative:
+		sum_vals = sum(player_moves.values())
+		player_moves = {k: v / float(sum_vals) for k,v in player_moves.items()}
+	return player_moves
+
 def one_hot(arr: list, num_classes: int, mapping: dict = {}) -> np.array:
 	""" Turns a list of integers into a one hot array"""
 	if type(arr) is not list:

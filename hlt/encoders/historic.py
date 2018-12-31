@@ -24,7 +24,7 @@ class HistoricEncoder(Encoder):
             factory_location = player["factory_location"]
             y = factory_location["y"]
             x = factory_location["x"]
-            player_id = player["player_id"]
+            player_id = str(player["player_id"])
             starting_structure[player_id] = {"0": {"x": x, "y": y}}
         return starting_structure
 
@@ -101,7 +101,9 @@ class HistoricEncoder(Encoder):
             # moves = [{owner: {ship_id: direction}}, ...]
             frame_moves = frame["moves"]
 
-            cur_moves = {str(owner_id): {str(move["id"]): move["direction"] for move in moves if move["type"] == "m"} for owner_id, moves in frame_moves.items()}
+            cur_moves = {
+                str(owner_id): {
+                    str(move["id"]): move["direction"] for move in moves if move["type"] == "m"} for owner_id, moves in frame_moves.items()}
             
             cur_ships = frame["entities"]
 
