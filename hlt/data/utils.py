@@ -35,3 +35,23 @@ def create_arr(locations: dict, player: str, shape: [int], player_key: str = 1, 
 			map_key = player_key if k == player else other_key
 			ships[p["y"]][p["x"]] = map_key
 	return ships
+
+def get_rotated_direction(move: str, num_rotations: int):
+	""" Returns the relative direction of a move after a series of 90-degree counter-clockwise rotations 
+		e.g. 
+			0,1,2	1-rot	2,5,8
+			3,4,5	 ->	 	1,4,7
+			6,7,8			0,3,6
+
+	"""
+	rotation_mapping = {
+			"n": "w",
+			"w": "s",
+			"s": "e",
+			"e": "n",
+			"o": "o"
+		}
+	cur_move = move
+	for _ in range(num_rotations):
+		cur_move = rotation_mapping.get(cur_move)
+	return cur_move

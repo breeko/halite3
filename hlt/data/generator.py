@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from hlt.data.utils import one_hot, create_arr, get_move_counts
+from hlt.data.utils import one_hot, create_arr, get_move_counts, get_rotated_direction
 from hlt.encoders.base import get_encoder_by_name
 from hlt.encoders.utils import roll_and_crop
 
@@ -16,7 +16,8 @@ class Generator:
 		batch_size:int=128,
 		start_frame_perc:float=0.0,
 		end_frame_perc:float=1.0,
-		equal_move_prob:bool=True) -> (dict, np.array):
+		equal_move_prob:bool=True,
+		rotate:bool=True,) -> (dict, np.array):
 		""""
 			Input generator for training a neural network
 			inputs:
@@ -45,7 +46,6 @@ class Generator:
 		"""
 		# TODO: Make player_name into a lambda to allow for things like winning player
 		# TODO: Implement lookback
-		# TODO: Random map rotations
 		
 		# user defined specs
 		self.replay_folder = replay_folder
@@ -63,6 +63,7 @@ class Generator:
 		self.move_mapping = {"n": 0, "s": 1, "e": 2, "w": 3, "o": 4}
 		self.num_move_types = len(self.move_mapping)
 		self.equal_move_prob = equal_move_prob
+		self.rotate = rotate
 	
 	@property
 	def output_shape(self):
@@ -144,8 +145,18 @@ class Generator:
 					rel_move_costs  = cargo - (rel_halites / move_cost_ratio) # how many times you can move from this space
 
 					 # normalize
-					norm_rel_halites 	= rel_halites / max_halite
+					norm_rel_halites 	 = rel_halites / max_halite
 					norm_rel_move_costs  = rel_move_costs / max_halite
+
+					if self.rotate:
+						num_rotations = np.random.randint(4) # 0 - 4
+						new_move = get_rotated_direction(move, num_rotations)
+						move = new_move
+
+						rel_halites = np.rot90(rel_halites, k=num_rotations)
+						rel_ships = np.rot90(rel_ships, k=num_rotations)
+						rel_structures = np.rot90(rel_structures, k=num_rotations)
+						rel_move_costs = np.rot90(rel_move_costs, k=num_rotations)
 					
 					rel_move 			= one_hot(arr=move, num_classes=self.num_move_types, mapping=self.move_mapping)
 

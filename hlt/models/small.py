@@ -19,13 +19,17 @@ def get_model(map_shape: tuple) -> Model:
     maps = Input(shape=map_shape, name="maps")
 
     x = maps
-
-    x = conv_layer(x=x, num_filters=128, kernel_size=(5,5), dropout=0.25, max_pool=False)
-    x = conv_layer(x=x, num_filters=128, kernel_size=(5,5), dropout=0.25, max_pool=False)
-    x = conv_layer(x=x, num_filters=128, kernel_size=(3,3), dropout=0.25, max_pool=False)
-    x = conv_layer(x=x, num_filters=128, kernel_size=(3,3), dropout=0.25, max_pool=False)
-    x = Flatten()(x)
     
+    x = conv_layer(x=x, num_filters=128, kernel_size=(3,3), dropout=0.25, max_pool=False)
+    x = conv_layer(x=x, num_filters=128, kernel_size=(5,5), dropout=0.25, max_pool=False)
+    x = conv_layer(x=x, num_filters=128, kernel_size=(7,7), dropout=0.25, max_pool=False)
+    # x = conv_layer(x=x, num_filters=64, kernel_size=(3,3), dropout=0.25, max_pool=False)
+    
+    # residual layer
+    # x = Concatenate()([x, maps])
+    
+    x = Flatten()(x)
+
     x = Dense(512)(x)
     x = LeakyReLU()(x)
     x = BatchNormalization()(x)
