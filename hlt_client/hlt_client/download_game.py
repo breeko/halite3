@@ -99,16 +99,18 @@ class GameDownloader:
         :return: Nothing
         """
         game_id = self._parse_id_from_url(url)
-        try:
-            print("downloading {}".format(url))
-            if self.decompress:
-                with open(os.path.join(self.destination, game_id + '.json'), 'w') as fout:
-                    fout.writelines(self._unzip(game_id, requests.get(url + _MEDIA_DOWNLOAD_OPTION).content))
-            else:
-                with open(os.path.join(self.destination, game_id + '.hlt'), 'wb') as fout:
-                    fout.write(requests.get(url + _MEDIA_DOWNLOAD_OPTION).content)
-        except Exception:
-            raise IOError("Could not write file {} to {}".format(game_id, self.destination))
+        save_path = os.path.join(self.destination, game_id + '.json' if self.decompress else ".hlt")
+        if not os.path.exists(save_path):
+            try:
+                print("downloading {}".format(url))
+                if self.decompress:
+                    with open(save_path, 'w') as fout:
+                        fout.writelines(self._unzip(game_id, requests.get(url + _MEDIA_DOWNLOAD_OPTION).content))
+                else:
+                    with open(save_path, 'wb') as fout:
+                        fout.write(requests.get(url + _MEDIA_DOWNLOAD_OPTION).content)
+            except Exception:
+                raise IOError("Could not write file {} to {}".format(game_id, self.destination))
 
     def get_objects(self):
         """

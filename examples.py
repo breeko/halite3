@@ -1,7 +1,6 @@
 from hlt.models.small import get_model
 from hlt.data.generator import Generator
-from hlt_client.download_game import download
-from hlt_client.client import REPLAY_MODE_USER
+from hlt_client.hlt_client.download_game import download
 from hlt.encoders.base import get_encoder_by_name
 
 import numpy as np
@@ -9,10 +8,10 @@ import numpy as np
 # Download games
 my_user_id = 6416
 download_user_id = 2807
-limit = 1000
-download_path = "hlt/games"
+limit = 1300
+download_path = "hlt/games/train/"
 download(
-    mode=REPLAY_MODE_USER,
+    mode="user",
     destination=download_path,
     date=None,
     all_bots=None,
