@@ -70,6 +70,7 @@ class Generator:
 		return (self.radius * 2 + 1, self.radius * 2 + 1, 4)
 		
 	def __next__(self):
+		# TODO: encode inspired pane
 		map_shape = self.radius * 2 + 1, self.radius * 2 + 1
 		num_classes = 5
 
@@ -96,7 +97,7 @@ class Generator:
 
 			move_cost_ratio = float(constants["MOVE_COST_RATIO"])
 
-			max_halite = np.max(encoded["halites"][0])
+			max_cell_production = float(constants["MAX_CELL_PRODUCTION"])
 			frame_shape = encoded["halites"][0].shape
 
 			move_counts = get_move_counts(player=player_id, frames_moves=encoded["moves"], relative=True)
@@ -145,8 +146,8 @@ class Generator:
 					rel_move_costs  = cargo - (rel_halites / move_cost_ratio) # how many times you can move from this space
 
 					 # normalize
-					norm_rel_halites 	 = rel_halites / max_halite
-					norm_rel_move_costs  = rel_move_costs / max_halite
+					norm_rel_halites 	 = rel_halites / max_cell_production
+					norm_rel_move_costs  = rel_move_costs / max_cell_production
 
 					if self.rotate:
 						num_rotations = np.random.randint(4) # 0 - 4

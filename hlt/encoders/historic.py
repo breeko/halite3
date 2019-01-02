@@ -1,4 +1,5 @@
 from hlt.encoders.base import Encoder
+from hlt.networking import Game 
 import numpy as np
 from copy import deepcopy
 
@@ -6,10 +7,10 @@ class HistoricEncoder(Encoder):
     def __init__(self):
         pass
     
-    def encode_from_gamemap(self, gamemap) -> None:
+    def encode_from_gamemap(self, game: Game) -> None:
         # TODO: fill me out
         raise NotImplementedError()
-
+                 
     def _get_initial_halite(self, production_map: dict, width: int, height: int) -> np.array:
         grid = production_map["grid"]
         halite = np.zeros(shape=(width, height, 1))
