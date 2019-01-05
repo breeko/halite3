@@ -1,4 +1,4 @@
-from keras.layers import Conv2D, Dropout, MaxPool2D, Dense, Flatten, Input, Concatenate, BatchNormalization, Softmax, Reshape, Lambda
+from keras.layers import Conv2D, Dropout, MaxPool2D, Dense, Flatten, Input, Concatenate, BatchNormalization, Softmax, Reshape, Lambda, add
 from keras.layers.merge import Concatenate
 from keras.layers.advanced_activations import LeakyReLU
 from keras.models import Model
@@ -20,20 +20,17 @@ def get_model(map_shape: tuple) -> Model:
 
     x = maps
     
-    x = conv_layer(x=x, num_filters=128, kernel_size=(3,3), dropout=0.25, max_pool=False)
-    x = conv_layer(x=x, num_filters=128, kernel_size=(5,5), dropout=0.25, max_pool=False)
-    x = conv_layer(x=x, num_filters=128, kernel_size=(7,7), dropout=0.25, max_pool=False)
-    # x = conv_layer(x=x, num_filters=64, kernel_size=(3,3), dropout=0.25, max_pool=False)
+    for _ in range(10):
+        x = conv_layer(x=x, num_filters=24, kernel_size=(5,5), dropout=0.25, max_pool=False)
+        # x = add([x, maps])
+        # residual layer
+        x = Concatenate(axis=-1)([x, maps])
     
-    # residual layer
-    # x = Concatenate()([x, maps])
-    
+    x = conv_layer(x=x, num_filters=128, kernel_size=(1,1), dropout=0.25, max_pool=False)
+    x = Concatenate()([x, maps])
+    x = conv_layer(x=x, num_filters=128, kernel_size=(1,1), dropout=0.25, max_pool=False)
+    x = Concatenate()([x, maps])
     x = Flatten()(x)
-
-    x = Dense(512)(x)
-    x = LeakyReLU()(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
 
     x = Dense(num_classes)(x)
     out = Softmax()(x)

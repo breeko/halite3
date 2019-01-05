@@ -8,7 +8,7 @@ import numpy as np
 # Download games
 my_user_id = 6416
 download_user_id = 2807
-limit = 1300
+limit = 1500
 download_path = "hlt/games/train/"
 download(
     mode="user",

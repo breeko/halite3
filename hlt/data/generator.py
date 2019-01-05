@@ -3,6 +3,7 @@ import numpy as np
 from hlt.data.utils import one_hot, create_arr, get_move_counts, get_rotated_direction
 from hlt.encoders.base import get_encoder_by_name
 from hlt.encoders.utils import roll_and_crop
+from json.decoder import JSONDecodeError
 
 class Generator:
 	def __init__(
@@ -75,6 +76,7 @@ class Generator:
 		num_classes = 5
 
 		out_cargos   	= np.zeros(shape=(self.batch_size, 1), dtype=np.float)
+		# out_num_move   	= np.zeros(shape=(self.batch_size, 1), dtype=np.float)
 		out_moves    	= np.zeros(shape=(self.batch_size, num_classes), dtype=np.float)
 		out_halites  	= np.zeros(shape=(self.batch_size, *map_shape, 1), dtype=np.float)
 		out_ships    	= np.zeros(shape=(self.batch_size, *map_shape, 1), dtype=np.float)
@@ -89,7 +91,10 @@ class Generator:
 			file_name = np.random.choice(available_files, size=1)[0]
 			file_path = "{}/{}".format(self.replay_folder, file_name)
 			
-			encoded = self.encoder.encode_from_file(path=file_path)
+			try:
+				encoded = self.encoder.encode_from_file(path=file_path)
+			except JSONDecodeError:
+				continue
 
 			player_id = encoded["players"][self.player_name]
 			num_frames = encoded["num_frames"]
@@ -168,6 +173,8 @@ class Generator:
 					out_move_costs[ct] 	= rel_move_costs
 					out_maps[ct]	 	= np.stack([norm_rel_halites, rel_ships, rel_structures, norm_rel_move_costs], axis=-1).squeeze()
 					out_cargos[ct]		= cargo
+					# out_num_move[ct]	= cargo
+					
 
 					ct = (ct + 1) % self.batch_size
 					

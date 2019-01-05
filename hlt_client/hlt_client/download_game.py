@@ -102,7 +102,6 @@ class GameDownloader:
         save_path = os.path.join(self.destination, game_id + '.json' if self.decompress else ".hlt")
         if not os.path.exists(save_path):
             try:
-                print("downloading {}".format(url))
                 if self.decompress:
                     with open(save_path, 'w') as fout:
                         fout.writelines(self._unzip(game_id, requests.get(url + _MEDIA_DOWNLOAD_OPTION).content))
@@ -118,9 +117,12 @@ class GameDownloader:
         :return: Nothing
         """
         with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-            for url in self.objects:
+            num_files = len(self.objects)
+            print()
+            for num_file, url in enumerate(self.objects):
+                print("\r{} / {}".format(num_file, num_files), end="")
                 executor.submit(self._get_object, url)
-
+            print()
 
 class DatedGameDownloader(GameDownloader):
 

@@ -9,8 +9,64 @@ class HistoricEncoder(Encoder):
     
     def encode_from_gamemap(self, game: Game) -> None:
         # TODO: fill me out
-        raise NotImplementedError()
-                 
+        # production_map = historic["production_map"]
+        # players = historic["players"]
+        # constants = historic["GAME_CONSTANTS"]
+        # frames = historic["full_frames"]
+        
+        # frame_cells = frame["cells"]
+        # frame_energy = frame["energy"]
+        # frame_events = frame["events"]
+        # cur_ships = frame["entities"]
+
+        #  return {    
+        #     "halites":      np.stack(halites,axis=0),
+        #     "energies":     energies,
+        #     "moves":        moves,
+        #     "structures":   structures,
+        #     "ships":        ships,
+        #     "num_frames":   len(frames),
+        #     "players":      player_names,
+        #     "constants":    constants
+        # }
+        gamemap = game.game_map
+        players = game.players
+
+        constants = {
+            "MAX_CELL_PRODUCTION": 1000,
+            "MOVE_COST_RATIO": 10
+        }
+
+        halites = [c.halite_amount for c in gamemap._cells]
+        energies = [p.halite_amount for p in players]
+        ships = {}
+        structures = {}
+        for c in gamemap._cells:
+            if c.ships is None:
+                continue
+            owner_ships = ships.get(c.ship.owner, {})
+            owner_ships[c.ship.id] = {"x": c.ship.position.x, "y": c.ship.position.y, "energy": c.ship.halite_amount}
+            ships[c.ship.owner] = owner_ships
+        for c in gamemap._cells:
+            # TODO: generalize!
+            if c.structure is None:
+                continue
+            owner_structures = structures.get(c.structure.owner, {})
+            owner_structures[c.structure.id] = {"x": c.structure.position.x, "y": c.structure.position.y}
+            structures[c.structure.owner] = owner_structures
+        moves = None
+        num_frames = 1
+        return {    
+            "halites":      np.stack(halites,axis=0),
+            "energies":     energies,
+            "moves":        moves,
+            "structures":   structures,
+            "ships":        ships,
+            "num_frames":   num_frames,
+            # "players":      player_names,
+            "constants":    constants
+        }
+
     def _get_initial_halite(self, production_map: dict, width: int, height: int) -> np.array:
         grid = production_map["grid"]
         halite = np.zeros(shape=(width, height, 1))
